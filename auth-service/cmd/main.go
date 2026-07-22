@@ -19,6 +19,9 @@ import (
 	"time"
 
 	_ "github.com/MiRRoRise/auth-service/docs"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 
 	"github.com/MiRRoRise/auth-service/internal/config"
@@ -51,6 +54,11 @@ func main() {
 		logger.Fatal("failed to ping DB: ", err)
 	}
 	logger.Info("connected to PostgreSQL")
+
+	if err := runMigrations(db, cfg.DBName); err != nil {
+		logger.Fatal("failed to run migrations", err)
+	}
+	logger.Info("migrations completed")
 
 	userRepo := repository.NewUserRepo(db)
 	hasher := password.NewBcryptHasher(0)
@@ -89,4 +97,25 @@ func main() {
 		logger.Error("server forced to shutdown", err)
 	}
 	logger.Info("server stopped")
+}
+
+func runMigrations(db *sql.DB, DBname string) error {
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		return err
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		DBname,
+		driver,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+	return nil
 }

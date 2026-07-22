@@ -7,6 +7,7 @@ import (
 	"github.com/MiRRoRise/auth-service/internal/delivery/dto"
 	"github.com/MiRRoRise/auth-service/internal/domain"
 	"github.com/MiRRoRise/auth-service/internal/usecase"
+	"github.com/MiRRoRise/auth-service/pkg/logger"
 )
 
 type Handler struct {
@@ -200,7 +201,7 @@ func JSON(w http.ResponseWriter, data interface{}, status int) {
 	w.WriteHeader(status)
 	if data != nil {
 		if err := json.NewEncoder(w).Encode(data); err != nil {
-			Error(w, "error encode json", http.StatusInternalServerError)
+			logger.New().Error("error encode json: %w", err)
 		}
 	}
 }
