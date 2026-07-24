@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MiRRoRise/chat-service/internal/clients"
 	"github.com/MiRRoRise/chat-service/internal/domain"
 	"github.com/MiRRoRise/chat-service/internal/repository"
 )
@@ -15,13 +16,19 @@ type MessageUseCase interface {
 
 type messageUseCase struct {
 	messageRepo repository.MessageRepository
-	chatRepo repository.ChatRepository
+	chatRepo    repository.ChatRepository
+	authClient  *clients.AuthClient
 }
 
-func NewMessageUseCase(messageRepo repository.MessageRepository, chatRepo repository.ChatRepository) *messageUseCase {
+func NewMessageUseCase(
+	messageRepo repository.MessageRepository,
+	chatRepo repository.ChatRepository,
+	authClient *clients.AuthClient,
+) *messageUseCase {
 	return &messageUseCase{
 		messageRepo: messageRepo,
-		chatRepo: chatRepo,
+		chatRepo:    chatRepo,
+		authClient:  authClient,
 	}
 }
 
@@ -37,10 +44,18 @@ func (u *messageUseCase) CreateMessage(ctx context.Context, chatID, senderID int
 		return nil, domain.ErrChatNotFound
 	}
 
+	exists, err := u.authClient.ValidateUser(ctx, senderID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate user: %w", err)
+	}
+	if !exists {
+		return nil, domain.ErrUserNotFound
+	}
+
 	message := &domain.Message{
-		ChatID: chatID,
+		ChatID:   chatID,
 		SenderID: senderID,
-		Text: text,
+		Text:     text,
 	}
 
 	if err := u.messageRepo.CreateMessage(ctx, message); err != nil {

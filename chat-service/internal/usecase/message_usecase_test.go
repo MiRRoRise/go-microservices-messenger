@@ -27,7 +27,7 @@ func TestMessageUseCase_CreateMessage_Success(t *testing.T) {
 	mockChatRepo := new(MockChatRepository)
 	mockMessageRepo := new(MockMessageRepository)
 
-	u := NewMessageUseCase(mockMessageRepo, mockChatRepo)
+	u := NewMessageUseCase(mockMessageRepo, mockChatRepo, nil)
 	ctx := context.Background()
 
 	msg := &domain.Message{
@@ -51,7 +51,7 @@ func TestMessageUseCase_CreateMessage_EmptyText(t *testing.T) {
 	mockChatRepo := new(MockChatRepository)
 	mockMessageRepo := new(MockMessageRepository)
 
-	u := NewMessageUseCase(mockMessageRepo, mockChatRepo)
+	u := NewMessageUseCase(mockMessageRepo, mockChatRepo, nil)
 	ctx := context.Background()
 
 	msg, err := u.CreateMessage(ctx, 1, 15, "")
@@ -65,7 +65,7 @@ func TestMessageUseCase_CreateMessage_ChatNotFound(t *testing.T) {
 	mockChatRepo := new(MockChatRepository)
 	mockMessageRepo := new(MockMessageRepository)
 
-	u := NewMessageUseCase(mockMessageRepo, mockChatRepo)
+	u := NewMessageUseCase(mockMessageRepo, mockChatRepo, nil)
 	ctx := context.Background()
 
 	mockChatRepo.On("GetChatByID", ctx, int64(123)).Return(nil, domain.ErrChatNotFound)
@@ -81,7 +81,7 @@ func TestMessageUseCase_ListMessages_Success(t *testing.T) {
 	mockChatRepo := new(MockChatRepository)
 	mockMessageRepo := new(MockMessageRepository)
 
-	u := NewMessageUseCase(mockMessageRepo, mockChatRepo)
+	u := NewMessageUseCase(mockMessageRepo, mockChatRepo, nil)
 	ctx := context.Background()
 
 	expected := []domain.Message{
@@ -104,7 +104,7 @@ func TestMessageUseCase_ListMessages_ChatNotFound(t *testing.T) {
 	mockChatRepo := new(MockChatRepository)
 	mockMessageRepo := new(MockMessageRepository)
 
-	u := NewMessageUseCase(mockMessageRepo, mockChatRepo)
+	u := NewMessageUseCase(mockMessageRepo, mockChatRepo, nil)
 	ctx := context.Background()
 
 

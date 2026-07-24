@@ -12,4 +12,5 @@ var (
 	ErrChatIDRequired   = errors.New("chat id reqired")
 	ErrUnauthorized     = errors.New("user unauthorized")
 	ErrInvalidToken     = errors.New("invalid token")
+	ErrUserNotFound     = errors.New("user not found")
 )

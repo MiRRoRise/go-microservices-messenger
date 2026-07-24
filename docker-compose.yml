@@ -26,6 +26,7 @@ services:
     container_name: auth-service
     ports:
       - "8080:8080"
+      - "50051:50051"
     environment:
       - DB_USER=user
       - DB_PASSWORD=password

@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/MiRRoRise/chat-service/internal/clients"
 	"github.com/MiRRoRise/chat-service/internal/config"
 	deliveryHTTP "github.com/MiRRoRise/chat-service/internal/delivery/http"
 	"github.com/MiRRoRise/chat-service/internal/repository"
@@ -59,8 +60,15 @@ func main() {
 	chatRepo := repository.NewChatRepo(db)
 	messageRepo := repository.NewMessageRepo(db)
 
+	authClient, err := clients.NewAuthClient("auth-service:50051")
+	if err != nil {
+		logger.Fatal("failed to create auth client", err)
+	}
+	defer authClient.Close()
+	logger.Info("connected via grpc")
+
 	chatUseCase := usecase.NewChatUseCase(chatRepo)
-	messageUseCase := usecase.NewMessageUseCase(messageRepo, chatRepo)
+	messageUseCase := usecase.NewMessageUseCase(messageRepo, chatRepo, authClient)
 	
 	manager := jwt.NewManager(cfg.JWTSecret)
 

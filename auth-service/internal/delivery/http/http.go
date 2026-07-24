@@ -201,7 +201,7 @@ func JSON(w http.ResponseWriter, data interface{}, status int) {
 	w.WriteHeader(status)
 	if data != nil {
 		if err := json.NewEncoder(w).Encode(data); err != nil {
-			logger.New().Error("error encode json: %w", err)
+			logger.New().Error("error encode json", err)
 		}
 	}
 }

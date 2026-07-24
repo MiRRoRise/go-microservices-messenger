@@ -12,6 +12,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,12 +26,15 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/MiRRoRise/auth-service/internal/config"
+	grpcDelivery "github.com/MiRRoRise/auth-service/internal/delivery/grpc"
 	deliveryHTTP "github.com/MiRRoRise/auth-service/internal/delivery/http"
 	"github.com/MiRRoRise/auth-service/internal/repository"
 	"github.com/MiRRoRise/auth-service/internal/usecase"
 	"github.com/MiRRoRise/auth-service/pkg/jwt"
 	"github.com/MiRRoRise/auth-service/pkg/logger"
 	"github.com/MiRRoRise/auth-service/pkg/password"
+	pb "github.com/MiRRoRise/auth-service/proto/auth"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -76,6 +80,22 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
 	}
+
+	go func() {
+		grpcServer := grpc.NewServer()
+		grpcHandler := grpcDelivery.NewServer(authUseCase)
+		pb.RegisterAuthServiceServer(grpcServer, grpcHandler)
+
+		lis, err := net.Listen("tcp", ":50051")
+		if err != nil {
+			logger.Fatal("failed to listen grpc", err)
+		}
+
+		logger.Info("grpc server started")
+		if err := grpcServer.Serve(lis); err != nil {
+			logger.Fatal("failed to serve grpc", err)
+		}
+	}()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
