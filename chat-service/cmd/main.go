@@ -20,6 +20,7 @@ import (
 	"github.com/MiRRoRise/chat-service/internal/clients"
 	"github.com/MiRRoRise/chat-service/internal/config"
 	deliveryHTTP "github.com/MiRRoRise/chat-service/internal/delivery/http"
+	"github.com/MiRRoRise/chat-service/internal/kafka"
 	"github.com/MiRRoRise/chat-service/internal/repository"
 	"github.com/MiRRoRise/chat-service/internal/usecase"
 	"github.com/MiRRoRise/chat-service/pkg/jwt"
@@ -67,8 +68,15 @@ func main() {
 	defer authClient.Close()
 	logger.Info("connected via grpc")
 
+	kafkaProducer, err := kafka.NewProducer([]string{"kafka:9092"})
+	if err != nil {
+		logger.Fatal("failed to create producer", err)
+	}
+	defer kafkaProducer.Close()
+	logger.Info("connected to kafka")
+
 	chatUseCase := usecase.NewChatUseCase(chatRepo)
-	messageUseCase := usecase.NewMessageUseCase(messageRepo, chatRepo, authClient)
+	messageUseCase := usecase.NewMessageUseCase(messageRepo, chatRepo, authClient, kafkaProducer, logger)
 	
 	manager := jwt.NewManager(cfg.JWTSecret)
 

@@ -5,6 +5,8 @@ import (
 
 	"github.com/MiRRoRise/auth-service/internal/usecase"
 	pb "github.com/MiRRoRise/auth-service/proto/auth"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Server struct {
@@ -20,34 +22,13 @@ func NewServer(authUseCase usecase.UserUseCase) *Server {
 
 func (s *Server) GetUserByID(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
 	user, err := s.authUseCase.GetUserByID(ctx, req.UserId)
-	if err != nil {
-		return &pb.GetUserResponse{
-			UserId:    0,
-			Email:     "",
-			IsActive:  false,
-			CreatedAt: "",
-		}, nil
+	if err != nil || user == nil {
+		return nil, status.Error(codes.NotFound, "user not found")
 	}
 
 	return &pb.GetUserResponse{
-		UserId:    user.ID,
-		Email:     user.Email,
-		IsActive:  true,
-		CreatedAt: user.CreatedAt.String(),
-	}, nil
-}
-
-func (s *Server) ValidateUser(ctx context.Context, req *pb.ValidateUserRequest) (*pb.ValidateUserResponse, error) {
-	user, err := s.authUseCase.GetUserByID(ctx, req.UserId)
-	if err != nil {
-		return &pb.ValidateUserResponse{
-			Exists: false,
-			IsActive: false,
-		}, nil
-	}
-
-	return &pb.ValidateUserResponse{
-		Exists: user != nil,
+		UserId:   user.ID,
+		Email:    user.Email,
 		IsActive: true,
 	}, nil
 }

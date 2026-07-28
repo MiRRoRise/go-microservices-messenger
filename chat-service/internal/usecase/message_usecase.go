@@ -6,7 +6,9 @@ import (
 
 	"github.com/MiRRoRise/chat-service/internal/clients"
 	"github.com/MiRRoRise/chat-service/internal/domain"
+	"github.com/MiRRoRise/chat-service/internal/kafka"
 	"github.com/MiRRoRise/chat-service/internal/repository"
+	"github.com/MiRRoRise/chat-service/pkg/logger"
 )
 
 type MessageUseCase interface {
@@ -15,20 +17,26 @@ type MessageUseCase interface {
 }
 
 type messageUseCase struct {
-	messageRepo repository.MessageRepository
-	chatRepo    repository.ChatRepository
-	authClient  *clients.AuthClient
+	messageRepo   repository.MessageRepository
+	chatRepo      repository.ChatRepository
+	authClient    clients.AuthClient
+	kafkaProducer kafka.MessageProducer
+	logger        *logger.Logger
 }
 
 func NewMessageUseCase(
 	messageRepo repository.MessageRepository,
 	chatRepo repository.ChatRepository,
-	authClient *clients.AuthClient,
+	authClient clients.AuthClient,
+	kafkaProducer kafka.MessageProducer,
+	logger *logger.Logger,
 ) *messageUseCase {
 	return &messageUseCase{
-		messageRepo: messageRepo,
-		chatRepo:    chatRepo,
-		authClient:  authClient,
+		messageRepo:   messageRepo,
+		chatRepo:      chatRepo,
+		authClient:    authClient,
+		kafkaProducer: kafkaProducer,
+		logger:        logger,
 	}
 }
 
@@ -60,6 +68,18 @@ func (u *messageUseCase) CreateMessage(ctx context.Context, chatID, senderID int
 
 	if err := u.messageRepo.CreateMessage(ctx, message); err != nil {
 		return nil, fmt.Errorf("failed to create message: %w", err)
+	}
+
+	event := kafka.MessageCreatedEvent{
+		MessageID: message.ID,
+		ChatID:    message.ChatID,
+		SenderID:  message.SenderID,
+		Text:      message.Text,
+		CreatedAt: message.CreatedAt,
+	}
+
+	if err := u.kafkaProducer.PublishMessageCreated(event); err != nil {
+		u.logger.Error("failed to publish event", err)
 	}
 
 	return message, nil

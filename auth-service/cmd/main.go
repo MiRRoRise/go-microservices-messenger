@@ -86,12 +86,12 @@ func main() {
 		grpcHandler := grpcDelivery.NewServer(authUseCase)
 		pb.RegisterAuthServiceServer(grpcServer, grpcHandler)
 
-		lis, err := net.Listen("tcp", ":50051")
+		lis, err := net.Listen("tcp", cfg.GRPCPort)
 		if err != nil {
 			logger.Fatal("failed to listen grpc", err)
 		}
 
-		logger.Info("grpc server started")
+		logger.Info("grpc server started on", cfg.GRPCPort)
 		if err := grpcServer.Serve(lis); err != nil {
 			logger.Fatal("failed to serve grpc", err)
 		}

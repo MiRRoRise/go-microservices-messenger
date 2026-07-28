@@ -12,6 +12,7 @@ type Config struct {
 	JWTSecret string
 
 	ServerPort string
+	GRPCPort   string
 }
 
 func New() *Config {
@@ -25,6 +26,7 @@ func New() *Config {
 		JWTSecret: getEnv("JWT_SECRET", "secret-key"),
 
 		ServerPort: getEnv("SERVER_PORT", ":8080"),
+		GRPCPort:   getEnv("GRPC_PORT", ":50051"),
 	}
 }
 

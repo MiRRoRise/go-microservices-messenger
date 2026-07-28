@@ -6,7 +6,6 @@ option go_package = "github.com/MiRRoRise/microservices/proto/auth";
 
 service AuthService {
     rpc GetUserByID(GetUserRequest) returns (GetUserResponse);
-    rpc ValidateUser(ValidateUserRequest) returns (ValidateUserResponse);
 }
 
 message GetUserRequest {
@@ -17,14 +16,4 @@ message GetUserResponse {
     int64 user_id = 1;
     string email = 2;
     bool is_active = 3;
-    string created_at = 4;
-}
-
-message ValidateUserRequest {
-    int64 user_id = 1;
-}
-
-message ValidateUserResponse {
-    bool exists = 1;
-    bool is_active = 2;
 }

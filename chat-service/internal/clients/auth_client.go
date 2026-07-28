@@ -7,15 +7,23 @@ import (
 
 	pb "github.com/MiRRoRise/chat-service/proto/auth"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
-type AuthClient struct {
+type AuthClient interface {
+	GetUserByID(ctx context.Context, userID int64) (*pb.GetUserResponse, error)
+	ValidateUser(ctx context.Context, userID int64) (bool, error)
+	Close() error
+}
+
+type authClient struct {
 	client pb.AuthServiceClient
 	conn   *grpc.ClientConn
 }
 
-func NewAuthClient(addr string) (*AuthClient, error) {
+func NewAuthClient(addr string) (*authClient, error) {
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect auth-service: %w", err)
@@ -23,17 +31,17 @@ func NewAuthClient(addr string) (*AuthClient, error) {
 
 	client := pb.NewAuthServiceClient(conn)
 
-	return &AuthClient{
+	return &authClient{
 		client: client,
 		conn:   conn,
 	}, nil
 }
 
-func (c *AuthClient) Close() error {
+func (c *authClient) Close() error {
 	return c.conn.Close()
 }
 
-func (c *AuthClient) GetUserByID(ctx context.Context, userID int64) (*pb.GetUserResponse, error) {
+func (c *authClient) GetUserByID(ctx context.Context, userID int64) (*pb.GetUserResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -43,18 +51,15 @@ func (c *AuthClient) GetUserByID(ctx context.Context, userID int64) (*pb.GetUser
 	return c.client.GetUserByID(ctx, req)
 }
 
-func (c *AuthClient) ValidateUser(ctx context.Context, userID int64) (bool, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	req := &pb.ValidateUserRequest{
-		UserId: userID,
-	}
-
-	resp, err := c.client.ValidateUser(ctx, req)
+func (c *authClient) ValidateUser(ctx context.Context, userID int64) (bool, error) {
+	resp, err := c.GetUserByID(ctx, userID)
 	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return false, nil
+		}
 		return false, fmt.Errorf("failed to validate user: %w", err)
 	}
 
-	return resp.Exists && resp.IsActive, nil
+	return resp != nil && resp.IsActive, nil
 }

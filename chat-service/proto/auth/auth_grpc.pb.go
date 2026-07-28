@@ -19,8 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_GetUserByID_FullMethodName  = "/auth.AuthService/GetUserByID"
-	AuthService_ValidateUser_FullMethodName = "/auth.AuthService/ValidateUser"
+	AuthService_GetUserByID_FullMethodName = "/auth.AuthService/GetUserByID"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -28,7 +27,6 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthServiceClient interface {
 	GetUserByID(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
-	ValidateUser(ctx context.Context, in *ValidateUserRequest, opts ...grpc.CallOption) (*ValidateUserResponse, error)
 }
 
 type authServiceClient struct {
@@ -49,22 +47,11 @@ func (c *authServiceClient) GetUserByID(ctx context.Context, in *GetUserRequest,
 	return out, nil
 }
 
-func (c *authServiceClient) ValidateUser(ctx context.Context, in *ValidateUserRequest, opts ...grpc.CallOption) (*ValidateUserResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ValidateUserResponse)
-	err := c.cc.Invoke(ctx, AuthService_ValidateUser_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
 type AuthServiceServer interface {
 	GetUserByID(context.Context, *GetUserRequest) (*GetUserResponse, error)
-	ValidateUser(context.Context, *ValidateUserRequest) (*ValidateUserResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -77,9 +64,6 @@ type UnimplementedAuthServiceServer struct{}
 
 func (UnimplementedAuthServiceServer) GetUserByID(context.Context, *GetUserRequest) (*GetUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserByID not implemented")
-}
-func (UnimplementedAuthServiceServer) ValidateUser(context.Context, *ValidateUserRequest) (*ValidateUserResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ValidateUser not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -120,24 +104,6 @@ func _AuthService_GetUserByID_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuthService_ValidateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ValidateUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).ValidateUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_ValidateUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).ValidateUser(ctx, req.(*ValidateUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -148,10 +114,6 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserByID",
 			Handler:    _AuthService_GetUserByID_Handler,
-		},
-		{
-			MethodName: "ValidateUser",
-			Handler:    _AuthService_ValidateUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
