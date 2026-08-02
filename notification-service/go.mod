@@ -2,7 +2,7 @@ module github.com/MiRRoRise/notification-service
 
 go 1.25.0
 
-require github.com/IBM/sarama v1.60.0
+require github.com/IBM/sarama v1.60.1
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

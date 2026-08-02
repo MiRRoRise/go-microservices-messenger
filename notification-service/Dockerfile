@@ -8,5 +8,4 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/main.go
 FROM alpine:latest
 WORKDIR /root/
 COPY --from=builder /app/app .
-RUN chmod +x ./app
 CMD ["./app"]

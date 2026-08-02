@@ -33,7 +33,7 @@ func (m *MockChatRepository) ListChats(ctx context.Context) ([]domain.Chat, erro
 
 func TestChatUseCase_CreateChat_Success(t *testing.T) {
 	mockRepo := new(MockChatRepository)
-	u := NewChatUseCase(mockRepo)
+	u := NewChatUseCase(mockRepo, nil)
 	ctx := context.Background()
 
 	mockRepo.On("CreateChat", ctx, mock.AnythingOfType("*domain.Chat")).Return(nil)
@@ -47,7 +47,7 @@ func TestChatUseCase_CreateChat_Success(t *testing.T) {
 
 func TestChatUseCase_CreateChat_Exists(t *testing.T) {
 	mockRepo := new(MockChatRepository)
-	u := NewChatUseCase(mockRepo)
+	u := NewChatUseCase(mockRepo, nil)
 	ctx := context.Background()
 
 	mockRepo.On("CreateChat", ctx, mock.AnythingOfType("*domain.Chat")).Return(domain.ErrChatExists)
@@ -62,7 +62,7 @@ func TestChatUseCase_CreateChat_Exists(t *testing.T) {
 
 func TestChatUseCase_GetChatByID_Success(t *testing.T) {
 	mockRepo := new(MockChatRepository)
-	u := NewChatUseCase(mockRepo)
+	u := NewChatUseCase(mockRepo, nil)
 	ctx := context.Background()
 
 	existing := &domain.Chat{
@@ -81,7 +81,7 @@ func TestChatUseCase_GetChatByID_Success(t *testing.T) {
 
 func TestChatUseCase_GetChatByID_NotFound(t *testing.T) {
 	mockRepo := new(MockChatRepository)
-	u := NewChatUseCase(mockRepo)
+	u := NewChatUseCase(mockRepo, nil)
 	ctx := context.Background()
 
 	mockRepo.On("GetChatByID", ctx, int64(1)).Return(nil, domain.ErrChatNotFound)
@@ -96,7 +96,7 @@ func TestChatUseCase_GetChatByID_NotFound(t *testing.T) {
 
 func TestChatUseCase_ListChats_Success(t *testing.T) {
 	mockRepo := new(MockChatRepository)
-	u := NewChatUseCase(mockRepo)
+	u := NewChatUseCase(mockRepo, nil)
 	ctx := context.Background()
 
 	expected := []domain.Chat{

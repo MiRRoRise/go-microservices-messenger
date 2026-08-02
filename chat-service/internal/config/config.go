@@ -9,7 +9,9 @@ type Config struct {
 	DBHost     string
 	DBPort     string
 
-	JWTSecret string
+	JWTSecret    string
+	RedisAddr    string
+	KafkaBrokers string
 
 	ServerPort string
 }
@@ -22,7 +24,9 @@ func New() *Config {
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5433"),
 
-		JWTSecret: getEnv("JWT_SECRET", "secret"),
+		JWTSecret:    getEnv("JWT_SECRET", "secret"),
+		RedisAddr:    getEnv("REDIS_ADDR", "localhost:6379"),
+		KafkaBrokers: getEnv("KAFKA_BROKERS", "kafka:9092"),
 
 		ServerPort: getEnv("SERVER_PORT", ":8081"),
 	}

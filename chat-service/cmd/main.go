@@ -25,6 +25,7 @@ import (
 	"github.com/MiRRoRise/chat-service/internal/usecase"
 	"github.com/MiRRoRise/chat-service/pkg/jwt"
 	"github.com/MiRRoRise/chat-service/pkg/logger"
+	"github.com/MiRRoRise/chat-service/pkg/redis"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -68,14 +69,21 @@ func main() {
 	defer authClient.Close()
 	logger.Info("connected via grpc")
 
-	kafkaProducer, err := kafka.NewProducer([]string{"kafka:9092"})
+	kafkaProducer, err := kafka.NewProducer([]string{cfg.KafkaBrokers})
 	if err != nil {
 		logger.Fatal("failed to create producer", err)
 	}
 	defer kafkaProducer.Close()
 	logger.Info("connected to kafka")
 
-	chatUseCase := usecase.NewChatUseCase(chatRepo)
+	redisClient, err := redis.NewClient(cfg.RedisAddr)
+	if err != nil {
+		logger.Fatal("failed to create redis", err)
+	}
+	defer redisClient.Close()
+	logger.Info("connected to redis")
+
+	chatUseCase := usecase.NewChatUseCase(chatRepo, redisClient)
 	messageUseCase := usecase.NewMessageUseCase(messageRepo, chatRepo, authClient, kafkaProducer, logger)
 	
 	manager := jwt.NewManager(cfg.JWTSecret)
