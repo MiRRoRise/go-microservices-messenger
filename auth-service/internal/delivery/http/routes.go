@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -14,6 +15,9 @@ func (h *Handler) RegisterRoutes() http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
+	r.Use(h.MetricsMiddleware)
+
+	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", h.Register)

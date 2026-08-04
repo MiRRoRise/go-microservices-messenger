@@ -142,10 +142,36 @@ services:
     networks:
       - messenger-network
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - messenger-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - messenger-network
+    depends_on:
+      - prometheus
 
 volumes: 
   auth-pgdata:
   chat-pgdata:
+  prometheus-data:
+  grafana-data:
 
 networks:
   messenger-network:

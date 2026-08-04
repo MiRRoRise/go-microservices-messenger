@@ -4,13 +4,26 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/MiRRoRise/auth-service/internal/domain"
+	"github.com/MiRRoRise/auth-service/internal/metrics"
 )
 
 type contextKey string
 
 const UserIDKey contextKey = "user_id"
+
+func (h *Handler) MetricsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		ww := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		next.ServeHTTP(ww, r)
+
+		duration := time.Since(start).Seconds()
+		metrics.RecordRequest(r.Method, r.URL.Path, int64(ww.statusCode), duration)
+	})
+}
 
 func (h *Handler) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -45,4 +58,14 @@ func GetIDFromContext(ctx context.Context) (int64, error) {
 		return 0, domain.ErrUnauthorized
 	}
 	return userID, nil
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
 }

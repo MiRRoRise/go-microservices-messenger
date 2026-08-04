@@ -9,6 +9,7 @@ import (
 
 	"github.com/MiRRoRise/chat-service/internal/domain"
 	"github.com/MiRRoRise/chat-service/internal/repository"
+	"github.com/MiRRoRise/chat-service/pkg/logger"
 	"github.com/MiRRoRise/chat-service/pkg/redis"
 )
 
@@ -21,12 +22,14 @@ type ChatUseCase interface {
 type chatUseCase struct {
 	chatRepo repository.ChatRepository
 	redis    *redis.Client
+	logger *logger.Logger
 }
 
-func NewChatUseCase(chatRepo repository.ChatRepository, redis *redis.Client) *chatUseCase {
+func NewChatUseCase(chatRepo repository.ChatRepository, redis *redis.Client, logger *logger.Logger) *chatUseCase {
 	return &chatUseCase{
 		chatRepo: chatRepo,
 		redis: redis,
+		logger: logger,
 	}
 }
 
@@ -48,7 +51,9 @@ func (u *chatUseCase) CreateChat(ctx context.Context, name string) (*domain.Chat
 		return nil, fmt.Errorf("sql create chat error: %w", err)
 	}
 
-	_ = u.redis.Del(ctx, "chats:list")
+	if err := u.redis.Del(ctx, "chats:list"); err != nil {
+		u.logger.Error("failed to invalidate cache", err)
+	}
 
 	return chat, nil
 }
@@ -72,8 +77,14 @@ func (u *chatUseCase) GetChatByID(ctx context.Context, chatID int64) (*domain.Ch
 		return nil, domain.ErrChatNotFound
 	}
 
-	data, _ := json.Marshal(chat)
-	_ = u.redis.Set(ctx, cacheKey, string(data), 5*time.Minute)
+	data, err := json.Marshal(chat)
+	if err != nil {
+		u.logger.Error("failed to marshal chat", err)
+	} else {
+		if err := u.redis.Set(ctx, cacheKey, string(data), 5*time.Minute); err != nil {
+			u.logger.Error("failed to set cache", err)
+		}
+	}
 
 	return chat, nil
 }
@@ -92,8 +103,14 @@ func (u *chatUseCase) ListChats(ctx context.Context) ([]domain.Chat, error) {
 		return nil, fmt.Errorf("failed to list chats: %w", err)
 	}
 
-	data, _ := json.Marshal(chats)
-	_ = u.redis.Set(ctx, "chats:list", string(data), 2*time.Minute)
+	data, err := json.Marshal(chats)
+	if err != nil {
+		u.logger.Error("failed to marshal chats", err)
+	} else {
+		if err := u.redis.Set(ctx, "chats:list", string(data), 2*time.Minute); err != nil {
+			u.logger.Error("failed to set cache", err)
+		}
+	}
 
 	return chats, nil
 }

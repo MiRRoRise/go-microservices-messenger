@@ -83,7 +83,7 @@ func main() {
 	defer redisClient.Close()
 	logger.Info("connected to redis")
 
-	chatUseCase := usecase.NewChatUseCase(chatRepo, redisClient)
+	chatUseCase := usecase.NewChatUseCase(chatRepo, redisClient, logger)
 	messageUseCase := usecase.NewMessageUseCase(messageRepo, chatRepo, authClient, kafkaProducer, logger)
 	
 	manager := jwt.NewManager(cfg.JWTSecret)
