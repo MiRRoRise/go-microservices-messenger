@@ -45,7 +45,9 @@ func (r *PostgresMessageRepository) ListMessages(ctx context.Context, chatID int
 	if err != nil {
 		return nil, fmt.Errorf("failed to list messages: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	var messages []domain.Message
 	for rows.Next() {

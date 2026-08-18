@@ -62,7 +62,9 @@ func (r *PostgresChatRepository) ListChats(ctx context.Context) ([]domain.Chat, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list chats: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	var chats []domain.Chat
 	for rows.Next() {

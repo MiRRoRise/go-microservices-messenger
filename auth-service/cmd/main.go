@@ -52,7 +52,9 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to connect to db", err)
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	if pingErr := db.Ping(); pingErr != nil {
 		logger.Fatal("failed to ping DB", pingErr)
@@ -72,7 +74,9 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to create kafka producer", err)
 	}
-	defer kafkaProducer.Close()
+	defer func() {
+		_ = kafkaProducer.Close()
+	}()
 	logger.Info("connected to kafka")
 
 	authUseCase := usecase.NewUserUseCase(userRepo, hasher, tokenManager, kafkaProducer, logger)

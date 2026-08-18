@@ -32,7 +32,9 @@ func setupTestDB(t *testing.T) *sql.DB {
 
 func TestChatRepository_CreateChat(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	repo := NewChatRepo(db)
 	ctx := context.Background()

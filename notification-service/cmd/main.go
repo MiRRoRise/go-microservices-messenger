@@ -25,7 +25,11 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to create consumer", err)
 	}
-	defer consumer.Close()
+	defer func() {
+		if err := consumer.Close(); err != nil {
+			log.Error("failed to close consumer", err)
+		}
+	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

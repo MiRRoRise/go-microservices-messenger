@@ -29,7 +29,9 @@ func setupTestDB(t *testing.T) *sql.DB {
 
 func TestUserRepository_CreateUser(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	repo := NewUserRepo(db)
 	ctx := context.Background()
@@ -46,7 +48,9 @@ func TestUserRepository_CreateUser(t *testing.T) {
 
 func TestUserRepository_GetByEmail_Success(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	repo := NewUserRepo(db)
 	ctx := context.Background()
@@ -69,7 +73,9 @@ func TestUserRepository_GetByEmail_Success(t *testing.T) {
 
 func TestUserRepository_GetByEmail_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	repo := NewUserRepo(db)
 	ctx := context.Background()
@@ -82,7 +88,9 @@ func TestUserRepository_GetByEmail_NotFound(t *testing.T) {
 
 func TestUserRepository_GetByID_Success(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	repo := NewUserRepo(db)
 	ctx := context.Background()
@@ -104,7 +112,9 @@ func TestUserRepository_GetByID_Success(t *testing.T) {
 
 func TestUserRepository_GetByID_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	repo := NewUserRepo(db)
 	ctx := context.Background()
@@ -117,7 +127,9 @@ func TestUserRepository_GetByID_NotFound(t *testing.T) {
 
 func TestUserRepository_CreateUser_DuplicateEmaiL(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	repo := NewUserRepo(db)
 	ctx := context.Background()

@@ -1,32 +1,36 @@
+version: "2"
+
 linters:
+  default: none
   enable:
-    - gofmt
-    - goimports
     - govet
     - errcheck
     - staticcheck
     - unused
-    - gosimple
     - ineffassign
     - misspell
     - revive
     - unconvert
     - unparam
     - whitespace
+  settings:
+    govet:
+      enable:
+        - shadow
+    revive:
+      confidence: 0.8
+  exclusions:
+    generated: lax
+    paths:
+      - docs
+      - vendor
+      - bin
+    rules:
+      - linters:
+          - revive
+        text: unexported-return
 
-linters-settings:
-  govet:
-    enable:
-      - shadow
-  revive:
-    min-confidence: 0.8
-
-issues:
-  exclude-dirs:
-    - docs
-    - vendor
-    - bin
-  exclude-rules:
-    - linters:
-        - revive
-      text: unexported-return
+formatters:
+  enable:
+    - gofmt
+    - goimports

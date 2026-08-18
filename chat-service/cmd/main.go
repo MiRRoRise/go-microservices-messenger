@@ -48,7 +48,9 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to connect to db", err)
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	if pingErr := db.Ping(); pingErr != nil {
 		logger.Fatal("failed to ping DB", pingErr)
@@ -67,21 +69,27 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to create auth client", err)
 	}
-	defer authClient.Close()
+	defer func() {
+		_ = authClient.Close()
+	}()
 	logger.Info("connected via grpc")
 
 	kafkaProducer, err := kafka.NewProducer([]string{cfg.KafkaBrokers})
 	if err != nil {
 		logger.Fatal("failed to create producer", err)
 	}
-	defer kafkaProducer.Close()
+	defer func() {
+		_ = kafkaProducer.Close()
+	}()
 	logger.Info("connected to kafka")
 
 	redisClient, err := redis.NewClient(cfg.RedisAddr)
 	if err != nil {
 		logger.Fatal("failed to create redis", err)
 	}
-	defer redisClient.Close()
+	defer func() {
+		_ = redisClient.Close()
+	}()
 	logger.Info("connected to redis")
 
 	chatUseCase := usecase.NewChatUseCase(chatRepo, redisClient, logger)

@@ -65,7 +65,11 @@ func (c *Consumer) Start(ctx context.Context, logger *logger.Logger) error {
 
 		go func(topic string, pc sarama.PartitionConsumer) {
 			defer wg.Done()
-			defer pc.Close()
+			defer func() {
+				if err := pc.Close(); err != nil {
+					logger.Error("failed to close partition consumer", err)
+				}
+			}()
 
 			for {
 				select {
