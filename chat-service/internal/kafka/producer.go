@@ -18,7 +18,7 @@ type MessageCreatedEvent struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type MessageProducer interface {
+type EventPublisher interface {
 	PublishMessageCreated(event MessageCreatedEvent) error
 }
 
@@ -39,7 +39,7 @@ func NewProducer(brokers []string) (*Producer, error) {
 	return &Producer{producer: producer}, nil
 }
 
-func(p *Producer) Close() error {
+func (p *Producer) Close() error {
 	return p.producer.Close()
 }
 

@@ -8,3 +8,17 @@ scrape_configs:
       - targets: ['auth-service:8080']
     metrics_path: '/metrics'
 
+  - job_name: 'chat-service'
+    static_configs:
+      - targets: ['chat-service:8081']
+    metrics_path: '/metrics'
+
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification-service:8082']
+    metrics_path: '/metrics'
+
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8000']
+    metrics_path: '/metrics'

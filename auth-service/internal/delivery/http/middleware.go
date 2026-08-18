@@ -8,6 +8,7 @@ import (
 
 	"github.com/MiRRoRise/auth-service/internal/domain"
 	"github.com/MiRRoRise/auth-service/internal/metrics"
+	"github.com/go-chi/chi/v5"
 )
 
 type contextKey string
@@ -19,9 +20,15 @@ func (h *Handler) MetricsMiddleware(next http.Handler) http.Handler {
 		start := time.Now()
 		ww := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 		next.ServeHTTP(ww, r)
-
 		duration := time.Since(start).Seconds()
-		metrics.RecordRequest(r.Method, r.URL.Path, int64(ww.statusCode), duration)
+
+		path := r.URL.Path
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			if pattern := rctx.RoutePattern(); pattern != "" {
+				path = pattern
+			}
+		}
+		metrics.RecordRequest(r.Method, path, int64(ww.statusCode), duration)
 	})
 }
 
@@ -39,9 +46,7 @@ func (h *Handler) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		tokenString := parts[1]
-
-		userID, err := h.userUseCase.ValidateRefreshToken(r.Context(), tokenString)
+		userID, err := h.tokenManager.ValidateAccessToken(parts[1])
 		if err != nil {
 			http.Error(w, "error validate token", http.StatusUnauthorized)
 			return

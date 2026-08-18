@@ -27,12 +27,8 @@ func NewHandler(chatUseCase usecase.ChatUseCase, messageUseCase usecase.MessageU
 	}
 }
 
-func (h *Handler) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"status": "ok",
-	})
+func (h *Handler) HealthCheck(w http.ResponseWriter, _ *http.Request) {
+	JSON(w, map[string]string{"status": "ok"}, http.StatusOK)
 }
 
 // CreateChat godoc
@@ -172,7 +168,7 @@ func (h *Handler) CreateMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req dto.CreateMessageRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if decodeErr := json.NewDecoder(r.Body).Decode(&req); decodeErr != nil {
 		Error(w, "error decode json", http.StatusBadRequest)
 		return
 	}
@@ -260,7 +256,7 @@ func JSON(w http.ResponseWriter, data interface{}, status int) {
 	w.WriteHeader(status)
 	if data != nil {
 		if err := json.NewEncoder(w).Encode(data); err != nil {
-			logger.New().Error("error encode json",  err)
+			logger.New().Error("error encode json", err)
 		}
 	}
 }

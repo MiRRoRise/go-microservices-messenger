@@ -43,7 +43,7 @@ func (c *Client) Set(ctx context.Context, key string, value interface{}, duratio
 func (c *Client) Del(ctx context.Context, keys ...string) error {
 	return c.client.Del(ctx, keys...).Err()
 }
- 
+
 func (c *Client) Exists(ctx context.Context, key string) (int64, error) {
 	return c.client.Exists(ctx, key).Result()
 }

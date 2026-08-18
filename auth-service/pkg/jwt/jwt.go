@@ -5,12 +5,13 @@ import (
 	"time"
 
 	"github.com/MiRRoRise/auth-service/internal/domain"
-	"github.com/golang-jwt/jwt/v5"
+	jwtv5 "github.com/golang-jwt/jwt/v5"
 )
 
 type TokenManager interface {
 	GenerateAccessToken(userID int64) (string, error)
 	GenerateRefreshToken(userID int64) (string, error)
+	ValidateAccessToken(tokenString string) (int64, error)
 	ValidateRefreshToken(tokenString string) (int64, error)
 }
 
@@ -23,58 +24,57 @@ func NewManager(secret string) *Manager {
 }
 
 func (m *Manager) GenerateAccessToken(userID int64) (string, error) {
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(15 * time.Minute).Unix(),
-		"iat":     time.Now().Unix(),
-		"type":    "access",
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(m.secretKey)
+	return m.generate(userID, "access", 15*time.Minute)
 }
 
 func (m *Manager) GenerateRefreshToken(userID int64) (string, error) {
-	claims := jwt.MapClaims{
+	return m.generate(userID, "refresh", 7*24*time.Hour)
+}
+
+func (m *Manager) generate(userID int64, tokenType string, ttl time.Duration) (string, error) {
+	claims := jwtv5.MapClaims{
 		"user_id": userID,
-		"exp":     time.Now().Add(7 * 24 * time.Hour).Unix(),
+		"exp":     time.Now().Add(ttl).Unix(),
 		"iat":     time.Now().Unix(),
-		"type":    "refresh",
+		"type":    tokenType,
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token := jwtv5.NewWithClaims(jwtv5.SigningMethodHS256, claims)
 	return token.SignedString(m.secretKey)
 }
 
+func (m *Manager) ValidateAccessToken(tokenString string) (int64, error) {
+	return m.validate(tokenString, "access")
+}
+
 func (m *Manager) ValidateRefreshToken(tokenString string) (int64, error) {
-	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (any, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("error validate token: %v", t.Header["alg"])
+	return m.validate(tokenString, "refresh")
+}
+
+func (m *Manager) validate(tokenString, expectedType string) (int64, error) {
+	token, err := jwtv5.Parse(tokenString, func(t *jwtv5.Token) (any, error) {
+		if _, ok := t.Method.(*jwtv5.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 		return m.secretKey, nil
 	})
-
-	if err != nil {
+	if err != nil || !token.Valid {
 		return 0, domain.ErrInvalidToken
 	}
 
-	if !token.Valid {
-		return 0, fmt.Errorf("token invalid")
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
+	claims, ok := token.Claims.(jwtv5.MapClaims)
 	if !ok {
-		return 0, fmt.Errorf("invalid claims")
+		return 0, domain.ErrInvalidToken
 	}
 
 	tokenType, ok := claims["type"].(string)
-	if !ok || tokenType != "refresh" {
-		return 0, fmt.Errorf("invalid token type")
+	if !ok || tokenType != expectedType {
+		return 0, domain.ErrInvalidToken
 	}
 
 	userIDFloat, ok := claims["user_id"].(float64)
 	if !ok {
-		return 0, fmt.Errorf("user id not found")
+		return 0, domain.ErrInvalidToken
 	}
 
 	return int64(userIDFloat), nil

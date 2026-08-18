@@ -1,21 +1,21 @@
 package dto
 
 type CreateChatRequest struct {
-    Name string `json:"name" binding:"required"`
+	Name string `json:"name"`
 }
 
 type CreateChatResponse struct {
-    ID        int64  `json:"id"`
-    Name      string `json:"name"`
-    CreatedAt string `json:"created_at"`
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
 }
 
 type ChatResponse struct {
-    ID        int64  `json:"id"`
-    Name      string `json:"name"`
-    CreatedAt string `json:"created_at"`
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
 }
 
 type ListChatsResponse struct {
-    Chats []ChatResponse `json:"chats"`
+	Chats []ChatResponse `json:"chats"`
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -16,19 +17,24 @@ func (h *Handler) RegisterRoutes() http.Handler {
 	r.Use(middleware.RequestID)
 
 	r.Get("/health", h.HealthCheck)
+	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
-	r.Get("/swagger/*", httpSwagger.WrapHandler)
+	r.Group(func(r chi.Router) {
+		r.Use(h.MetricsMiddleware)
 
-	r.Route("/chats", func(r chi.Router) {
-		r.Use(h.AuthMiddleware)
+		r.Get("/swagger/*", httpSwagger.WrapHandler)
 
-		r.Post("/", h.CreateChat)
-		r.Get("/", h.ListChats)
-		r.Get("/{id}", h.GetChatByID)
+		r.Route("/chats", func(r chi.Router) {
+			r.Use(h.AuthMiddleware)
 
-		r.Route("/{id}/messages", func(r chi.Router) {
-			r.Post("/", h.CreateMessage)
-			r.Get("/", h.ListMessages)
+			r.Post("/", h.CreateChat)
+			r.Get("/", h.ListChats)
+			r.Get("/{id}", h.GetChatByID)
+
+			r.Route("/{id}/messages", func(r chi.Router) {
+				r.Post("/", h.CreateMessage)
+				r.Get("/", h.ListMessages)
+			})
 		})
 	})
 

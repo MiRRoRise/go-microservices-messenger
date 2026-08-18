@@ -9,11 +9,11 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/MiRRoRise/notification-service/internal/logger"
+	"github.com/MiRRoRise/notification-service/internal/metrics"
 )
 
 const (
 	TopicMessageCreated = "message.created"
-	TopicChatCreated    = "chat.created"
 	TopicUserRegistered = "user.registered"
 )
 
@@ -22,12 +22,6 @@ type MessageCreatedEvent struct {
 	ChatID    int64     `json:"chat_id"`
 	SenderID  int64     `json:"sender_id"`
 	Text      string    `json:"text"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type ChatCreatedEvent struct {
-	ChatID    int64     `json:"chat_id"`
-	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -59,13 +53,13 @@ func NewConsumer(brokers []string) (*Consumer, error) {
 }
 
 func (c *Consumer) Start(ctx context.Context, logger *logger.Logger) error {
-	topics := []string{TopicMessageCreated, TopicChatCreated, TopicUserRegistered}
+	topics := []string{TopicMessageCreated, TopicUserRegistered}
 
 	var wg sync.WaitGroup
 	for _, topic := range topics {
-		partitionConsumer, err := c.consumer.ConsumePartition(topic, 0, sarama.OffsetOldest)
+		partitionConsumer, err := c.consumePartitionWithRetry(ctx, topic)
 		if err != nil {
-			return fmt.Errorf("failed to start partition consumer: %w", err)
+			return fmt.Errorf("failed to start partition consumer for %s: %w", topic, err)
 		}
 		wg.Add(1)
 
@@ -77,11 +71,13 @@ func (c *Consumer) Start(ctx context.Context, logger *logger.Logger) error {
 				select {
 				case msg, ok := <-pc.Messages():
 					if !ok {
-						return 
+						return
 					}
 					c.handleMessage(topic, msg, logger)
 				case err := <-pc.Errors():
-					logger.Error("failed partition consumer", err)
+					if err != nil {
+						logger.Error("failed partition consumer", err)
+					}
 				case <-ctx.Done():
 					return
 				}
@@ -97,8 +93,31 @@ func (c *Consumer) Start(ctx context.Context, logger *logger.Logger) error {
 	return nil
 }
 
+func (c *Consumer) consumePartitionWithRetry(ctx context.Context, topic string) (sarama.PartitionConsumer, error) {
+	var lastErr error
+	for attempt := 0; attempt < 30; attempt++ {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		pc, err := c.consumer.ConsumePartition(topic, 0, sarama.OffsetOldest)
+		if err == nil {
+			return pc, nil
+		}
+		lastErr = err
+		time.Sleep(2 * time.Second)
+	}
+	return nil, lastErr
+}
+
 func (c *Consumer) Close() error {
 	return c.consumer.Close()
+}
+
+func (c *Consumer) Done() <-chan struct{} {
+	return c.done
 }
 
 func (c *Consumer) handleMessage(topic string, msg *sarama.ConsumerMessage, logger *logger.Logger) {
@@ -117,19 +136,7 @@ func (c *Consumer) handleMessage(topic string, msg *sarama.ConsumerMessage, logg
 			"sender_id", event.SenderID,
 			"text", event.Text,
 		)
-		
-	case TopicChatCreated:
-		var event ChatCreatedEvent
-		if err := json.Unmarshal(msg.Value, &event); err != nil {
-			logger.Error("failed to unmarshal event", err)
-			return
-		}
-
-		logger.Info(
-			"New chat",
-			"chat_id", event.ChatID,
-			"name", event.Name,
-		)
+		metrics.KafkaEventsConsumed.WithLabelValues(topic).Inc()
 
 	case TopicUserRegistered:
 		var event UserRegisteredEvent
@@ -139,12 +146,13 @@ func (c *Consumer) handleMessage(topic string, msg *sarama.ConsumerMessage, logg
 		}
 
 		logger.Info(
-			"New user",
+			"User registered",
 			"user_id", event.UserID,
 			"email", event.Email,
 		)
+		metrics.KafkaEventsConsumed.WithLabelValues(topic).Inc()
 
-	default: 
-		logger.Info("unknown topic")
+	default:
+		logger.Info("unknown topic", "topic", topic)
 	}
 }

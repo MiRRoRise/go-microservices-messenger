@@ -6,8 +6,8 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "localhost:8080",
-    "basePath": "/api/v1",
+    "host": "localhost:9080",
+    "basePath": "/",
     "paths": {
         "/auth/login": {
             "post": {
@@ -63,7 +63,7 @@
         },
         "/auth/logout": {
             "post": {
-                "description": "Invalidate user session (clear auth context)",
+                "description": "Client-side logout only (no server-side token revocation)",
                 "tags": [
                     "auth"
                 ],
@@ -226,10 +226,6 @@
     "definitions": {
         "github_com_MiRRoRise_auth-service_internal_delivery_dto.LoginRequest": {
             "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -271,17 +267,12 @@
         },
         "github_com_MiRRoRise_auth-service_internal_delivery_dto.RegisterRequest": {
             "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
                 "password": {
-                    "type": "string",
-                    "minLength": 6
+                    "type": "string"
                 }
             }
         },

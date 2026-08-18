@@ -1,7 +1,7 @@
 // @title Chat Service API
 // @version 1.0
 // @description Chat service for messenger
-// @host localhost:8081
+// @host localhost:9081
 // @BasePath /
 // @securityDefinitions.apikey BearerAuth
 // @in header
@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/MiRRoRise/chat-service/docs"
 	"github.com/MiRRoRise/chat-service/internal/clients"
 	"github.com/MiRRoRise/chat-service/internal/config"
 	deliveryHTTP "github.com/MiRRoRise/chat-service/internal/delivery/http"
@@ -45,17 +46,17 @@ func main() {
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		logger.Fatal("failed to connect to db: ", err)
+		logger.Fatal("failed to connect to db", err)
 	}
 	defer db.Close()
 
-	if err := db.Ping(); err != nil {
-		logger.Fatal("failed to ping DB: ", err)
+	if pingErr := db.Ping(); pingErr != nil {
+		logger.Fatal("failed to ping DB", pingErr)
 	}
 	logger.Info("connected to PostgreSQL")
 
-	if err := runMigrations(db, cfg.DBName); err != nil {
-		logger.Fatal("failed to run migrations", err)
+	if migErr := runMigrations(db, cfg.DBName); migErr != nil {
+		logger.Fatal("failed to run migrations", migErr)
 	}
 	logger.Info("migrations completed")
 
@@ -85,7 +86,7 @@ func main() {
 
 	chatUseCase := usecase.NewChatUseCase(chatRepo, redisClient, logger)
 	messageUseCase := usecase.NewMessageUseCase(messageRepo, chatRepo, authClient, kafkaProducer, logger)
-	
+
 	manager := jwt.NewManager(cfg.JWTSecret)
 
 	handler := deliveryHTTP.NewHandler(chatUseCase, messageUseCase, manager)
@@ -103,9 +104,9 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		logger.Info("chat-service started on port: ", cfg.ServerPort)
+		logger.Info("chat-service started", "port", cfg.ServerPort)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("failed to start server: ", err)
+			logger.Fatal("failed to start server", err)
 		}
 	}()
 

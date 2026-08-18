@@ -12,9 +12,14 @@ import (
 )
 
 func setupTestDB(t *testing.T) *sql.DB {
+	t.Helper()
 	connStr := "user=user password=password dbname=db host=localhost port=5432 sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	require.NoError(t, err)
+
+	if pingErr := db.Ping(); pingErr != nil {
+		t.Skipf("postgres not available: %v", pingErr)
+	}
 
 	_, err = db.Exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE")
 	require.NoError(t, err)
@@ -47,7 +52,7 @@ func TestUserRepository_GetByEmail_Success(t *testing.T) {
 	ctx := context.Background()
 
 	user := &domain.User{
-		Email: "correct@email.com",
+		Email:        "correct@email.com",
 		PasswordHash: "hashed_password",
 	}
 
@@ -55,7 +60,7 @@ func TestUserRepository_GetByEmail_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	userByEmail, err := repo.GetByEmail(ctx, user.Email)
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, userByEmail)
 	assert.Equal(t, user.PasswordHash, userByEmail.PasswordHash)
@@ -83,7 +88,7 @@ func TestUserRepository_GetByID_Success(t *testing.T) {
 	ctx := context.Background()
 
 	user := &domain.User{
-		Email: "correct@email.com",
+		Email:        "correct@email.com",
 		PasswordHash: "hashed_password",
 	}
 
@@ -91,7 +96,7 @@ func TestUserRepository_GetByID_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	userByID, err := repo.GetByID(ctx, user.ID)
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, userByID)
 	assert.Equal(t, user.Email, userByID.Email)
@@ -118,14 +123,14 @@ func TestUserRepository_CreateUser_DuplicateEmaiL(t *testing.T) {
 	ctx := context.Background()
 
 	user1 := &domain.User{
-		Email: "email@email.com",
+		Email:        "email@email.com",
 		PasswordHash: "hashed_password",
 	}
 	err := repo.CreateUser(ctx, user1)
 	require.NoError(t, err)
 
 	user2 := &domain.User{
-		Email: "email@email.com",
+		Email:        "email@email.com",
 		PasswordHash: "another_hashed_password",
 	}
 	err = repo.CreateUser(ctx, user2)

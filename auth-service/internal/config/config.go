@@ -11,8 +11,9 @@ type Config struct {
 
 	JWTSecret string
 
-	ServerPort string
-	GRPCPort   string
+	ServerPort   string
+	GRPCPort     string
+	KafkaBrokers string
 }
 
 func New() *Config {
@@ -25,8 +26,9 @@ func New() *Config {
 
 		JWTSecret: getEnv("JWT_SECRET", "secret-key"),
 
-		ServerPort: getEnv("SERVER_PORT", ":8080"),
-		GRPCPort:   getEnv("GRPC_PORT", ":50051"),
+		ServerPort:   getEnv("SERVER_PORT", ":8080"),
+		GRPCPort:     getEnv("GRPC_PORT", ":50051"),
+		KafkaBrokers: getEnv("KAFKA_BROKERS", "localhost:9092"),
 	}
 }
 

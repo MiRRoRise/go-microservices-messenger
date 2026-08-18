@@ -1,12 +1,3 @@
-// @title Auth Service API
-// @version 1.0
-// @description Authentication service for messenger
-// @host localhost:8080
-// @BasePath /api/v1
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-
 package main
 
 import (
@@ -28,6 +19,7 @@ import (
 	"github.com/MiRRoRise/auth-service/internal/config"
 	grpcDelivery "github.com/MiRRoRise/auth-service/internal/delivery/grpc"
 	deliveryHTTP "github.com/MiRRoRise/auth-service/internal/delivery/http"
+	"github.com/MiRRoRise/auth-service/internal/kafka"
 	"github.com/MiRRoRise/auth-service/internal/repository"
 	"github.com/MiRRoRise/auth-service/internal/usecase"
 	"github.com/MiRRoRise/auth-service/pkg/jwt"
@@ -37,6 +29,14 @@ import (
 	"google.golang.org/grpc"
 )
 
+// @title Auth Service API
+// @version 1.0
+// @description Authentication service for messenger
+// @host localhost:9080
+// @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	cfg := config.New()
 	logger := logger.New()
@@ -50,17 +50,17 @@ func main() {
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		logger.Fatal("failed to connect to db: ", err)
+		logger.Fatal("failed to connect to db", err)
 	}
 	defer db.Close()
 
-	if err := db.Ping(); err != nil {
-		logger.Fatal("failed to ping DB: ", err)
+	if pingErr := db.Ping(); pingErr != nil {
+		logger.Fatal("failed to ping DB", pingErr)
 	}
 	logger.Info("connected to PostgreSQL")
 
-	if err := runMigrations(db, cfg.DBName); err != nil {
-		logger.Fatal("failed to run migrations", err)
+	if migErr := runMigrations(db, cfg.DBName); migErr != nil {
+		logger.Fatal("failed to run migrations", migErr)
 	}
 	logger.Info("migrations completed")
 
@@ -68,9 +68,16 @@ func main() {
 	hasher := password.NewBcryptHasher(0)
 	tokenManager := jwt.NewManager(cfg.JWTSecret)
 
-	authUseCase := usecase.NewUserUseCase(userRepo, hasher, tokenManager)
+	kafkaProducer, err := kafka.NewProducer([]string{cfg.KafkaBrokers})
+	if err != nil {
+		logger.Fatal("failed to create kafka producer", err)
+	}
+	defer kafkaProducer.Close()
+	logger.Info("connected to kafka")
 
-	handler := deliveryHTTP.NewHandler(authUseCase)
+	authUseCase := usecase.NewUserUseCase(userRepo, hasher, tokenManager, kafkaProducer, logger)
+
+	handler := deliveryHTTP.NewHandler(authUseCase, tokenManager)
 	router := handler.RegisterRoutes()
 
 	srv := &http.Server{
@@ -81,17 +88,17 @@ func main() {
 		IdleTimeout:  15 * time.Second,
 	}
 
-	go func() {
-		grpcServer := grpc.NewServer()
-		grpcHandler := grpcDelivery.NewServer(authUseCase)
-		pb.RegisterAuthServiceServer(grpcServer, grpcHandler)
+	grpcServer := grpc.NewServer()
+	grpcHandler := grpcDelivery.NewServer(authUseCase)
+	pb.RegisterAuthServiceServer(grpcServer, grpcHandler)
 
+	go func() {
 		lis, err := net.Listen("tcp", cfg.GRPCPort)
 		if err != nil {
 			logger.Fatal("failed to listen grpc", err)
 		}
 
-		logger.Info("grpc server started on", cfg.GRPCPort)
+		logger.Info("grpc server started", "port", cfg.GRPCPort)
 		if err := grpcServer.Serve(lis); err != nil {
 			logger.Fatal("failed to serve grpc", err)
 		}
@@ -101,9 +108,9 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		logger.Info("auth-service started on port: ", cfg.ServerPort)
+		logger.Info("auth-service started", "port", cfg.ServerPort)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("failed to start server: ", err)
+			logger.Fatal("failed to start server", err)
 		}
 	}()
 
@@ -112,6 +119,8 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
+	grpcServer.GracefulStop()
 
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("server forced to shutdown", err)

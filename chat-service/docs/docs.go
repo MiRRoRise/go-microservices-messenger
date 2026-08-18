@@ -34,7 +34,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.ListChatsResponse"
+                            "$ref": "#/definitions/github_com_MiRRoRise_chat-service_internal_delivery_dto.ListChatsResponse"
                         }
                     },
                     "401": {
@@ -72,7 +72,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateChatRequest"
+                            "$ref": "#/definitions/github_com_MiRRoRise_chat-service_internal_delivery_dto.CreateChatRequest"
                         }
                     }
                 ],
@@ -80,7 +80,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateChatResponse"
+                            "$ref": "#/definitions/github_com_MiRRoRise_chat-service_internal_delivery_dto.CreateChatResponse"
                         }
                     },
                     "400": {
@@ -132,7 +132,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.ChatResponse"
+                            "$ref": "#/definitions/github_com_MiRRoRise_chat-service_internal_delivery_dto.ChatResponse"
                         }
                     },
                     "400": {
@@ -193,7 +193,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.ListMessagesResponse"
+                            "$ref": "#/definitions/github_com_MiRRoRise_chat-service_internal_delivery_dto.ListMessagesResponse"
                         }
                     },
                     "400": {
@@ -256,7 +256,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateMessageRequest"
+                            "$ref": "#/definitions/github_com_MiRRoRise_chat-service_internal_delivery_dto.CreateMessageRequest"
                         }
                     }
                 ],
@@ -264,7 +264,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateMessageResponse"
+                            "$ref": "#/definitions/github_com_MiRRoRise_chat-service_internal_delivery_dto.CreateMessageResponse"
                         }
                     },
                     "400": {
@@ -299,7 +299,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.ChatResponse": {
+        "github_com_MiRRoRise_chat-service_internal_delivery_dto.ChatResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -313,18 +313,15 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.CreateChatRequest": {
+        "github_com_MiRRoRise_chat-service_internal_delivery_dto.CreateChatRequest": {
             "type": "object",
-            "required": [
-                "name"
-            ],
             "properties": {
                 "name": {
                     "type": "string"
                 }
             }
         },
-        "dto.CreateChatResponse": {
+        "github_com_MiRRoRise_chat-service_internal_delivery_dto.CreateChatResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -338,18 +335,15 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.CreateMessageRequest": {
+        "github_com_MiRRoRise_chat-service_internal_delivery_dto.CreateMessageRequest": {
             "type": "object",
-            "required": [
-                "text"
-            ],
             "properties": {
                 "text": {
                     "type": "string"
                 }
             }
         },
-        "dto.CreateMessageResponse": {
+        "github_com_MiRRoRise_chat-service_internal_delivery_dto.CreateMessageResponse": {
             "type": "object",
             "properties": {
                 "chat_id": {
@@ -369,29 +363,29 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ListChatsResponse": {
+        "github_com_MiRRoRise_chat-service_internal_delivery_dto.ListChatsResponse": {
             "type": "object",
             "properties": {
                 "chats": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.ChatResponse"
+                        "$ref": "#/definitions/github_com_MiRRoRise_chat-service_internal_delivery_dto.ChatResponse"
                     }
                 }
             }
         },
-        "dto.ListMessagesResponse": {
+        "github_com_MiRRoRise_chat-service_internal_delivery_dto.ListMessagesResponse": {
             "type": "object",
             "properties": {
                 "messages": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.MessageResponse"
+                        "$ref": "#/definitions/github_com_MiRRoRise_chat-service_internal_delivery_dto.MessageResponse"
                     }
                 }
             }
         },
-        "dto.MessageResponse": {
+        "github_com_MiRRoRise_chat-service_internal_delivery_dto.MessageResponse": {
             "type": "object",
             "properties": {
                 "chat_id": {
@@ -424,13 +418,15 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8081",
+	Host:             "localhost:9081",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Chat Service API",
 	Description:      "Chat service for messenger",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

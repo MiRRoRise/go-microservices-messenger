@@ -12,10 +12,15 @@ import (
 )
 
 func setupTestDB(t *testing.T) *sql.DB {
+	t.Helper()
 	connStr := "user=user password=password dbname=chat_db host=localhost port=5433 sslmode=disable"
 
 	db, err := sql.Open("postgres", connStr)
 	require.NoError(t, err)
+
+	if pingErr := db.Ping(); pingErr != nil {
+		t.Skipf("postgres not available: %v", pingErr)
+	}
 
 	_, err = db.Exec("TRUNCATE TABLE chats RESTART IDENTITY CASCADE")
 	require.NoError(t, err)
@@ -40,4 +45,3 @@ func TestChatRepository_CreateChat(t *testing.T) {
 	assert.NotZero(t, chat.ID)
 	assert.NotZero(t, chat.CreatedAt)
 }
-

@@ -26,3 +26,7 @@ issues:
     - docs
     - vendor
     - bin
+  exclude-rules:
+    - linters:
+        - revive
+      text: unexported-return

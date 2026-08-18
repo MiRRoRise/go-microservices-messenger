@@ -66,7 +66,7 @@ func TestChatUseCase_GetChatByID_Success(t *testing.T) {
 	ctx := context.Background()
 
 	existing := &domain.Chat{
-		ID: int64(123),
+		ID:   int64(123),
 		Name: "exist",
 	}
 

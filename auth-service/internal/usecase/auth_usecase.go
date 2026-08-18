@@ -3,10 +3,14 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/MiRRoRise/auth-service/internal/domain"
+	"github.com/MiRRoRise/auth-service/internal/kafka"
+	"github.com/MiRRoRise/auth-service/internal/metrics"
 	"github.com/MiRRoRise/auth-service/internal/repository"
 	"github.com/MiRRoRise/auth-service/pkg/jwt"
+	"github.com/MiRRoRise/auth-service/pkg/logger"
 	"github.com/MiRRoRise/auth-service/pkg/password"
 )
 
@@ -15,24 +19,32 @@ type UserUseCase interface {
 	Login(ctx context.Context, email, password string) (accessToken, refreshToken string, err error)
 	RefreshTokens(ctx context.Context, refreshToken string) (newAccess, newRefresh string, err error)
 	GetUserByID(ctx context.Context, userID int64) (*domain.User, error)
-	ValidateRefreshToken(ctx context.Context, tokenString string) (int64, error)
 }
 
 type userUseCase struct {
-	repo   repository.UserRepository
-	hasher password.Hasher
-	tokens jwt.TokenManager
+	repo      repository.UserRepository
+	hasher    password.Hasher
+	tokens    jwt.TokenManager
+	publisher kafka.EventPublisher
+	logger    *logger.Logger
 }
 
 func NewUserUseCase(
 	repo repository.UserRepository,
 	hasher password.Hasher,
 	tokens jwt.TokenManager,
+	publisher kafka.EventPublisher,
+	logger *logger.Logger,
 ) *userUseCase {
+	if publisher == nil {
+		publisher = kafka.NoopPublisher{}
+	}
 	return &userUseCase{
-		repo:   repo,
-		hasher: hasher,
-		tokens: tokens,
+		repo:      repo,
+		hasher:    hasher,
+		tokens:    tokens,
+		publisher: publisher,
+		logger:    logger,
 	}
 }
 
@@ -62,6 +74,19 @@ func (u *userUseCase) Register(ctx context.Context, email, password string) (*do
 		return nil, fmt.Errorf("sql error create user: %w", err)
 	}
 
+	metrics.RegistrationsTotal.Inc()
+
+	event := kafka.UserRegisteredEvent{
+		UserID:    user.ID,
+		Email:     user.Email,
+		CreatedAt: time.Now().UTC(),
+	}
+	if err := u.publisher.PublishUserRegistered(event); err != nil {
+		if u.logger != nil {
+			u.logger.Error("failed to publish user.registered", err)
+		}
+	}
+
 	return user, nil
 }
 
@@ -74,7 +99,7 @@ func (u *userUseCase) Login(ctx context.Context, email, password string) (access
 		return "", "", domain.ErrUserNotFound
 	}
 
-	if err := u.hasher.Compare(existing.PasswordHash, password); err != nil {
+	if compareErr := u.hasher.Compare(existing.PasswordHash, password); compareErr != nil {
 		return "", "", domain.ErrInvalidCredentials
 	}
 
@@ -87,6 +112,8 @@ func (u *userUseCase) Login(ctx context.Context, email, password string) (access
 	if err != nil {
 		return "", "", fmt.Errorf("error generate refresh token: %w", err)
 	}
+
+	metrics.LoginsTotal.Inc()
 
 	return accessToken, refreshToken, nil
 }
@@ -124,8 +151,4 @@ func (u *userUseCase) GetUserByID(ctx context.Context, userID int64) (*domain.Us
 		return nil, domain.ErrUserNotFound
 	}
 	return user, nil
-}
-
-func (u *userUseCase) ValidateRefreshToken(ctx context.Context, tokenString string) (int64, error) {
-	return u.tokens.ValidateRefreshToken(tokenString)
 }

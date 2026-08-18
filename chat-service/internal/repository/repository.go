@@ -16,5 +16,3 @@ type MessageRepository interface {
 	CreateMessage(ctx context.Context, message *domain.Message) error
 	ListMessages(ctx context.Context, chatID int64) ([]domain.Message, error)
 }
-
-

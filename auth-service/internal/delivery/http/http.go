@@ -7,17 +7,24 @@ import (
 	"github.com/MiRRoRise/auth-service/internal/delivery/dto"
 	"github.com/MiRRoRise/auth-service/internal/domain"
 	"github.com/MiRRoRise/auth-service/internal/usecase"
+	"github.com/MiRRoRise/auth-service/pkg/jwt"
 	"github.com/MiRRoRise/auth-service/pkg/logger"
 )
 
 type Handler struct {
-	userUseCase usecase.UserUseCase
+	userUseCase  usecase.UserUseCase
+	tokenManager jwt.TokenManager
 }
 
-func NewHandler(userUseCase usecase.UserUseCase) *Handler {
+func NewHandler(userUseCase usecase.UserUseCase, tokenManager jwt.TokenManager) *Handler {
 	return &Handler{
-		userUseCase: userUseCase,
+		userUseCase:  userUseCase,
+		tokenManager: tokenManager,
 	}
+}
+
+func (h *Handler) HealthCheck(w http.ResponseWriter, _ *http.Request) {
+	JSON(w, map[string]string{"status": "ok"}, http.StatusOK)
 }
 
 // Register godoc
@@ -188,11 +195,11 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 // Logout godoc
 // @Summary      Logout user
-// @Description  Invalidate user session (clear auth context)
+// @Description  Client-side logout only (no server-side token revocation)
 // @Tags         auth
 // @Success      204  "No Content"
 // @Router       /auth/logout [post]
-func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Logout(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 

@@ -24,8 +24,8 @@ func (r *PostgresMessageRepository) CreateMessage(ctx context.Context, message *
 	err := r.db.QueryRowContext(
 		ctx,
 		"INSERT INTO messages (chat_id, sender_id, text) VALUES($1, $2, $3) RETURNING id, created_at",
-		message.ChatID, 
-		message.SenderID, 
+		message.ChatID,
+		message.SenderID,
 		message.Text,
 	).Scan(&message.ID, &message.CreatedAt)
 

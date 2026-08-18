@@ -49,6 +49,11 @@ func (m *MockManager) GenerateRefreshToken(id int64) (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (m *MockManager) ValidateAccessToken(tokenString string) (int64, error) {
+	args := m.Called(tokenString)
+	return args.Get(0).(int64), args.Error(1)
+}
+
 func (m *MockManager) ValidateRefreshToken(tokenString string) (int64, error) {
 	args := m.Called(tokenString)
 	return args.Get(0).(int64), args.Error(1)
@@ -59,7 +64,7 @@ func TestAuthUsecase_Register_Success(t *testing.T) {
 	mockManager := new(MockManager)
 	hasher := password.NewBcryptHasher(4)
 
-	usecase := NewUserUseCase(mockRepo, hasher, mockManager)
+	usecase := NewUserUseCase(mockRepo, hasher, mockManager, nil, nil)
 	ctx := context.Background()
 
 	mockRepo.On("GetByEmail", ctx, "correct@email.com").Return(nil, nil)
@@ -79,7 +84,7 @@ func TestAuthUsecase_Register_UserExists(t *testing.T) {
 	mockManager := new(MockManager)
 	hasher := password.NewBcryptHasher(4)
 
-	usecase := NewUserUseCase(mockRepo, hasher, mockManager)
+	usecase := NewUserUseCase(mockRepo, hasher, mockManager, nil, nil)
 	ctx := context.Background()
 
 	existing := &domain.User{
@@ -102,7 +107,7 @@ func TestAuthUsecase_Login_Success(t *testing.T) {
 	mockManager := new(MockManager)
 	hasher := password.NewBcryptHasher(4)
 
-	usecase := NewUserUseCase(mockRepo, hasher, mockManager)
+	usecase := NewUserUseCase(mockRepo, hasher, mockManager, nil, nil)
 	ctx := context.Background()
 
 	hashed, _ := hasher.Hash("password123")
@@ -130,7 +135,7 @@ func TestAuthUsecase_Login_WrongPassword(t *testing.T) {
 	mockManager := new(MockManager)
 	hasher := password.NewBcryptHasher(4)
 
-	usecase := NewUserUseCase(mockRepo, hasher, mockManager)
+	usecase := NewUserUseCase(mockRepo, hasher, mockManager, nil, nil)
 	ctx := context.Background()
 
 	hashed, _ := hasher.Hash("correctPassword")
@@ -155,7 +160,7 @@ func TestAuthUsecase_Login_UserNotFound(t *testing.T) {
 	mockManager := new(MockManager)
 	hasher := password.NewBcryptHasher(4)
 
-	usecase := NewUserUseCase(mockRepo, hasher, mockManager)
+	usecase := NewUserUseCase(mockRepo, hasher, mockManager, nil, nil)
 	ctx := context.Background()
 
 	mockRepo.On("GetByEmail", ctx, "userNotExists@gmail.com").Return(nil, nil)
@@ -174,12 +179,12 @@ func TestAuthUsecase_RefreshTokens_Success(t *testing.T) {
 	mockManager := new(MockManager)
 	hasher := password.NewBcryptHasher(4)
 
-	usecase := NewUserUseCase(mockRepo, hasher, mockManager)
+	usecase := NewUserUseCase(mockRepo, hasher, mockManager, nil, nil)
 	ctx := context.Background()
 
 	user := &domain.User{
-		ID: int64(123),
-		Email: "user@gmail.com",
+		ID:           int64(123),
+		Email:        "user@gmail.com",
 		PasswordHash: "hashed_password",
 	}
 
@@ -202,7 +207,7 @@ func TestAuthUsecase_RefreshTokens_InvalidToken(t *testing.T) {
 	mockManager := new(MockManager)
 	hasher := password.NewBcryptHasher(4)
 
-	usecase := NewUserUseCase(mockRepo, hasher, mockManager)
+	usecase := NewUserUseCase(mockRepo, hasher, mockManager, nil, nil)
 	ctx := context.Background()
 
 	mockManager.On("ValidateRefreshToken", "invalid_token").Return(int64(0), domain.ErrInvalidToken)

@@ -5,18 +5,40 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/go-openapi/testify/v2/assert"
-	"github.com/go-openapi/testify/v2/require"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
-	authServiceURL  = "http://localhost:8080"
-	chatServiceURL  = "http://localhost:8081"
-	notificationURL = "http://localhost:8082"
+	defaultGatewayURL = "http://localhost:9000"
+	defaultAuthURL    = "http://localhost:9080"
+	defaultChatURL    = "http://localhost:9081"
 )
+
+func gatewayURL() string {
+	if v := os.Getenv("GATEWAY_URL"); v != "" {
+		return v
+	}
+	return defaultGatewayURL
+}
+
+func authURL() string {
+	if v := os.Getenv("AUTH_URL"); v != "" {
+		return v
+	}
+	return gatewayURL()
+}
+
+func chatURL() string {
+	if v := os.Getenv("CHAT_URL"); v != "" {
+		return v
+	}
+	return gatewayURL()
+}
 
 type RegisterRequest struct {
 	Email    string `json:"email"`
@@ -118,7 +140,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 
 	t.Run("Invalid login should fail", func(t *testing.T) {
 		resp, err := http.Post(
-			authServiceURL+"/auth/login",
+			authURL()+"/auth/login",
 			"application/json",
 			bytes.NewBuffer([]byte(`{"email":"nonexistent@test.com","password":"wrong"}`)),
 		)
@@ -130,7 +152,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 
 	t.Run("Create chat without token should fail", func(t *testing.T) {
 		resp, err := http.Post(
-			chatServiceURL+"/chats",
+			chatURL()+"/chats",
 			"application/json",
 			bytes.NewBuffer([]byte(`{"name":"Unauthorized Chat"}`)),
 		)
@@ -150,7 +172,7 @@ func registerUser(t *testing.T, email, password string) RegisterResponse {
 	require.NoError(t, err)
 
 	resp, err := http.Post(
-		authServiceURL+"/auth/register",
+		authURL()+"/auth/register",
 		"application/json",
 		bytes.NewBuffer(data),
 	)
@@ -174,7 +196,7 @@ func loginUser(t *testing.T, email, password string) LoginResponse {
 	require.NoError(t, err)
 
 	resp, err := http.Post(
-		authServiceURL+"/auth/login",
+		authURL()+"/auth/login",
 		"application/json",
 		bytes.NewBuffer(data),
 	)
@@ -194,7 +216,7 @@ func createChat(t *testing.T, token, name string) CreateChatResponse {
 	data, err := json.Marshal(reqBody)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest("POST", chatServiceURL+"/chats", bytes.NewBuffer(data))
+	req, err := http.NewRequest("POST", chatURL()+"/chats", bytes.NewBuffer(data))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -217,7 +239,7 @@ func sendMessage(t *testing.T, token, text string, chatID int64) CreateMessageRe
 	data, err := json.Marshal(reqBody)
 	require.NoError(t, err)
 
-	url := fmt.Sprintf("%s/chats/%d/messages", chatServiceURL, chatID)
+	url := fmt.Sprintf("%s/chats/%d/messages", chatURL(), chatID)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
@@ -237,7 +259,7 @@ func sendMessage(t *testing.T, token, text string, chatID int64) CreateMessageRe
 }
 
 func getChats(t *testing.T, token string) ListChatsResponse {
-	req, err := http.NewRequest("GET", chatServiceURL+"/chats", nil)
+	req, err := http.NewRequest("GET", chatURL()+"/chats", nil)
 	require.NoError(t, err)
 	req.Header.Set("Authorization", "Bearer "+token)
 
@@ -255,7 +277,7 @@ func getChats(t *testing.T, token string) ListChatsResponse {
 }
 
 func getMessages(t *testing.T, token string, chatID int64) ListMessagesResponse {
-	url := fmt.Sprintf("%s/chats/%d/messages", chatServiceURL, chatID)
+	url := fmt.Sprintf("%s/chats/%d/messages", chatURL(), chatID)
 	req, err := http.NewRequest("GET", url, nil)
 	require.NoError(t, err)
 	req.Header.Set("Authorization", "Bearer "+token)

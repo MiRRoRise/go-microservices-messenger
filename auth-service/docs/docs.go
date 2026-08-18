@@ -69,7 +69,7 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
-                "description": "Invalidate user session (clear auth context)",
+                "description": "Client-side logout only (no server-side token revocation)",
                 "tags": [
                     "auth"
                 ],
@@ -232,10 +232,6 @@ const docTemplate = `{
     "definitions": {
         "github_com_MiRRoRise_auth-service_internal_delivery_dto.LoginRequest": {
             "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -277,17 +273,12 @@ const docTemplate = `{
         },
         "github_com_MiRRoRise_auth-service_internal_delivery_dto.RegisterRequest": {
             "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
                 "password": {
-                    "type": "string",
-                    "minLength": 6
+                    "type": "string"
                 }
             }
         },
@@ -332,8 +323,8 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
-	BasePath:         "/api/v1",
+	Host:             "localhost:9080",
+	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Auth Service API",
 	Description:      "Authentication service for messenger",

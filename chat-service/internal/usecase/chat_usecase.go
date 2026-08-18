@@ -22,14 +22,14 @@ type ChatUseCase interface {
 type chatUseCase struct {
 	chatRepo repository.ChatRepository
 	redis    *redis.Client
-	logger *logger.Logger
+	logger   *logger.Logger
 }
 
 func NewChatUseCase(chatRepo repository.ChatRepository, redis *redis.Client, logger *logger.Logger) *chatUseCase {
 	return &chatUseCase{
 		chatRepo: chatRepo,
-		redis: redis,
-		logger: logger,
+		redis:    redis,
+		logger:   logger,
 	}
 }
 
@@ -51,8 +51,10 @@ func (u *chatUseCase) CreateChat(ctx context.Context, name string) (*domain.Chat
 		return nil, fmt.Errorf("sql create chat error: %w", err)
 	}
 
-	if err := u.redis.Del(ctx, "chats:list"); err != nil {
-		u.logger.Error("failed to invalidate cache", err)
+	if u.redis != nil {
+		if err := u.redis.Del(ctx, "chats:list"); err != nil && u.logger != nil {
+			u.logger.Error("failed to invalidate cache", err)
+		}
 	}
 
 	return chat, nil
@@ -64,11 +66,13 @@ func (u *chatUseCase) GetChatByID(ctx context.Context, chatID int64) (*domain.Ch
 	}
 
 	cacheKey := fmt.Sprintf("chat:%d", chatID)
-	cached, err := u.redis.Get(ctx, cacheKey)
-	if err == nil && cached != "" {
-		var chat domain.Chat
-		if err := json.Unmarshal([]byte(cached), &chat); err == nil {
-			return &chat, nil
+	if u.redis != nil {
+		cached, err := u.redis.Get(ctx, cacheKey)
+		if err == nil && cached != "" {
+			var chat domain.Chat
+			if err := json.Unmarshal([]byte(cached), &chat); err == nil {
+				return &chat, nil
+			}
 		}
 	}
 
@@ -77,11 +81,13 @@ func (u *chatUseCase) GetChatByID(ctx context.Context, chatID int64) (*domain.Ch
 		return nil, domain.ErrChatNotFound
 	}
 
-	data, err := json.Marshal(chat)
-	if err != nil {
-		u.logger.Error("failed to marshal chat", err)
-	} else {
-		if err := u.redis.Set(ctx, cacheKey, string(data), 5*time.Minute); err != nil {
+	if u.redis != nil {
+		data, err := json.Marshal(chat)
+		if err != nil {
+			if u.logger != nil {
+				u.logger.Error("failed to marshal chat", err)
+			}
+		} else if err := u.redis.Set(ctx, cacheKey, string(data), 5*time.Minute); err != nil && u.logger != nil {
 			u.logger.Error("failed to set cache", err)
 		}
 	}
@@ -90,11 +96,13 @@ func (u *chatUseCase) GetChatByID(ctx context.Context, chatID int64) (*domain.Ch
 }
 
 func (u *chatUseCase) ListChats(ctx context.Context) ([]domain.Chat, error) {
-	cached, err := u.redis.Get(ctx, "chats:list")
-	if err == nil && cached != "" {
-		var chats []domain.Chat
-		if err := json.Unmarshal([]byte(cached), &chats); err == nil {
-			return chats, nil
+	if u.redis != nil {
+		cached, err := u.redis.Get(ctx, "chats:list")
+		if err == nil && cached != "" {
+			var chats []domain.Chat
+			if err := json.Unmarshal([]byte(cached), &chats); err == nil {
+				return chats, nil
+			}
 		}
 	}
 
@@ -103,11 +111,13 @@ func (u *chatUseCase) ListChats(ctx context.Context) ([]domain.Chat, error) {
 		return nil, fmt.Errorf("failed to list chats: %w", err)
 	}
 
-	data, err := json.Marshal(chats)
-	if err != nil {
-		u.logger.Error("failed to marshal chats", err)
-	} else {
-		if err := u.redis.Set(ctx, "chats:list", string(data), 2*time.Minute); err != nil {
+	if u.redis != nil {
+		data, err := json.Marshal(chats)
+		if err != nil {
+			if u.logger != nil {
+				u.logger.Error("failed to marshal chats", err)
+			}
+		} else if err := u.redis.Set(ctx, "chats:list", string(data), 2*time.Minute); err != nil && u.logger != nil {
 			u.logger.Error("failed to set cache", err)
 		}
 	}

@@ -1,7 +1,7 @@
 package dto
 
 type CreateMessageRequest struct {
-	Text string `json:"text" binding:"required"`
+	Text string `json:"text"`
 }
 
 type CreateMessageResponse struct {
@@ -21,5 +21,5 @@ type MessageResponse struct {
 }
 
 type ListMessagesResponse struct {
-    Messages []MessageResponse `json:"messages"`
+	Messages []MessageResponse `json:"messages"`
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/MiRRoRise/chat-service/internal/clients"
 	"github.com/MiRRoRise/chat-service/internal/domain"
 	"github.com/MiRRoRise/chat-service/internal/kafka"
+	"github.com/MiRRoRise/chat-service/internal/metrics"
 	"github.com/MiRRoRise/chat-service/internal/repository"
 	"github.com/MiRRoRise/chat-service/pkg/logger"
 )
@@ -20,7 +21,7 @@ type messageUseCase struct {
 	messageRepo   repository.MessageRepository
 	chatRepo      repository.ChatRepository
 	authClient    clients.AuthClient
-	kafkaProducer kafka.MessageProducer
+	kafkaProducer kafka.EventPublisher
 	logger        *logger.Logger
 }
 
@@ -28,7 +29,7 @@ func NewMessageUseCase(
 	messageRepo repository.MessageRepository,
 	chatRepo repository.ChatRepository,
 	authClient clients.AuthClient,
-	kafkaProducer kafka.MessageProducer,
+	kafkaProducer kafka.EventPublisher,
 	logger *logger.Logger,
 ) *messageUseCase {
 	return &messageUseCase{
@@ -69,6 +70,8 @@ func (u *messageUseCase) CreateMessage(ctx context.Context, chatID, senderID int
 	if err := u.messageRepo.CreateMessage(ctx, message); err != nil {
 		return nil, fmt.Errorf("failed to create message: %w", err)
 	}
+
+	metrics.MessagesCreatedTotal.Inc()
 
 	event := kafka.MessageCreatedEvent{
 		MessageID: message.ID,
